@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>LinhaVoz — Histórico WhatsApp</title>
+  <meta name="description" content="Importe ZIP do WhatsApp, transcreva áudios e veja o histórico completo em linha do tempo." />
+  <meta name="theme-color" content="#061114" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="LinhaVoz" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="favicon.png" />
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <style>
+    :root{--bg:#05090b;--panel:#0b1417;--panel2:#101d21;--line:#1c3338;--text:#eff8f7;--muted:#8fa4a7;--soft:#c7d8d9;--green:#a7ff3f;--cyan:#22d3ee;--coral:#ff6b57;--danger:#ff625c;--shadow:0 24px 80px rgba(0,0,0,.42);--radius:22px}
+    *{box-sizing:border-box}html,body{height:100%}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:radial-gradient(circle at 20% 0%,rgba(167,255,63,.12),transparent 28%),radial-gradient(circle at 90% 8%,rgba(34,211,238,.13),transparent 32%),var(--bg);color:var(--text)}
+    .app{max-width:920px;margin:0 auto;padding:22px 16px 80px}.top{display:flex;align-items:center;gap:14px;padding:8px 4px 22px}.logo{width:52px;height:52px;border-radius:16px;background:linear-gradient(145deg,#0b171b,#112a2f);display:grid;place-items:center;box-shadow:0 0 0 1px rgba(167,255,63,.22),0 16px 40px rgba(34,211,238,.12)}.logo svg{width:38px;height:38px}h1{font-size:28px;line-height:1;margin:0;letter-spacing:-.04em}.tag{margin:5px 0 0;color:var(--muted);font-size:14px}
+    .card{background:linear-gradient(180deg,rgba(16,29,33,.92),rgba(8,17,20,.94));border:1px solid rgba(167,255,63,.12);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;margin-bottom:14px}.hero{padding:22px}.hero h2{font-size:24px;line-height:1.12;margin:0 0 8px;letter-spacing:-.035em}.hero p{margin:0;color:var(--soft);line-height:1.42}
+    .keybox{display:grid;gap:10px}.row{display:flex;gap:10px;align-items:center}.input{width:100%;border:1px solid var(--line);background:#071013;color:var(--text);padding:13px 14px;border-radius:15px;outline:0;font-size:14px}.saved{font-size:13px;color:var(--green);display:none}.saved.show{display:block}
+    .drop{margin-top:16px;border:1.5px dashed rgba(167,255,63,.42);border-radius:20px;padding:18px;text-align:center;background:rgba(167,255,63,.045)}.drop.drag{background:rgba(167,255,63,.12);border-color:var(--green)}.file{display:none}.btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}button,.btn{border:0;border-radius:15px;padding:13px 16px;font-weight:800;letter-spacing:-.01em;cursor:pointer;color:#071013;background:var(--green);box-shadow:0 10px 30px rgba(167,255,63,.16);text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:14px}button.secondary{background:#142529;color:var(--text);border:1px solid var(--line);box-shadow:none}button.coral{background:var(--coral);color:white}button:disabled{opacity:.5;cursor:not-allowed}
+    .status{display:none;gap:12px;align-items:center;color:var(--soft)}.status.show{display:flex}.spinner{width:22px;height:22px;border-radius:999px;border:3px solid rgba(167,255,63,.18);border-top-color:var(--green);animation:spin .8s linear infinite;flex:0 0 auto}@keyframes spin{to{transform:rotate(360deg)}}.bar{height:8px;background:#0e1b1f;border-radius:99px;overflow:hidden;margin-top:13px;border:1px solid var(--line)}.bar span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--green),var(--cyan));transition:width .25s ease}
+    .summary{display:none;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}.summary.show{display:grid}.metric{border:1px solid var(--line);border-radius:17px;padding:13px;background:rgba(255,255,255,.025)}.metric strong{display:block;font-size:23px;line-height:1;color:var(--green)}.metric span{font-size:12px;color:var(--muted)}.tools{display:none;gap:10px;flex-wrap:wrap;margin-bottom:14px}.tools.show{display:flex}.search{flex:1;min-width:200px;border:1px solid var(--line);background:#071013;color:var(--text);padding:13px 14px;border-radius:15px;outline:0;font-size:14px}
+    .timeline{display:none;position:relative;padding-left:12px}.timeline.show{display:block}.item{position:relative;margin:0 0 12px 0;padding:14px 14px 14px 16px;border:1px solid var(--line);border-radius:18px;background:rgba(9,18,21,.86)}.item:before{content:"";position:absolute;left:-13px;top:22px;width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 18px rgba(167,255,63,.7)}.meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px;color:var(--muted);font-size:12px}.author{color:var(--cyan);font-weight:800;font-size:13px}.kind{font-size:11px;font-weight:800;border:1px solid rgba(167,255,63,.28);color:var(--green);border-radius:999px;padding:3px 8px;background:rgba(167,255,63,.06)}.kind.audio{color:#fff;background:rgba(255,107,87,.12);border-color:rgba(255,107,87,.32)}.text{white-space:pre-wrap;line-height:1.48;color:#edf7f6;font-size:15px}.empty{color:var(--muted);text-align:center;padding:24px}.err{display:none;border-color:rgba(255,98,92,.32);background:rgba(255,98,92,.08);color:#ffd0cd}.err.show{display:block}.warn{font-size:12px;color:var(--muted);line-height:1.35}
+    @media(max-width:560px){.app{padding:16px 12px 60px}.top{padding-bottom:16px}.logo{width:48px;height:48px}h1{font-size:25px}.hero h2{font-size:21px}.card{border-radius:20px}.summary{grid-template-columns:1fr}.row{flex-direction:column;align-items:stretch}.btns button,.btns .btn,.tools button{width:100%}.tools .search{width:100%}}
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="top">
+      <div class="logo" aria-hidden="true">
+        <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="12" y="12" width="76" height="76" rx="22" fill="#071316" stroke="#A7FF3F" stroke-width="3"/><path d="M31 67V29h10v29h24v9H31Z" fill="#A7FF3F"/><path d="M69 28c7 9 7 34 0 44" stroke="#22D3EE" stroke-width="8" stroke-linecap="round"/><path d="M57 38c3 6 3 18 0 24" stroke="#22D3EE" stroke-width="6" stroke-linecap="round"/></svg>
+      </div>
+      <div><h1>LinhaVoz</h1><p class="tag">Histórico WhatsApp com áudios transcritos</p></div>
+    </header>
+
+    <section class="card keybox">
+      <strong>Chave OpenAI</strong>
+      <div class="row">
+        <input id="apiKey" class="input" type="password" placeholder="Cole sua OPENAI_API_KEY aqui" autocomplete="off" />
+        <button id="saveKey">Salvar chave</button>
+        <button id="clearKey" class="secondary">Limpar</button>
+      </div>
+      <div id="keySaved" class="saved">Chave salva neste navegador.</div>
+      <div class="warn">A chave fica salva só neste aparelho/navegador. Não envie esse link para clientes usarem com a sua chave.</div>
+    </section>
+
+    <section class="card hero">
+      <h2>Importe o ZIP do WhatsApp</h2>
+      <p>Ele organiza a conversa em linha do tempo e coloca os áudios transcritos no ponto certo.</p>
+      <div id="drop" class="drop">
+        <strong>Arraste o ZIP aqui</strong><br />
+        <span style="color:var(--muted);font-size:13px">ou selecione o arquivo exportado do WhatsApp com mídia</span>
+        <div class="btns">
+          <label class="btn" for="fileInput">Selecionar ZIP</label>
+          <button id="installBtn" class="secondary" style="display:none">Instalar app</button>
+        </div>
+        <input id="fileInput" class="file" type="file" accept=".zip,application/zip,application/x-zip-compressed" />
+      </div>
+    </section>
+
+    <section id="statusCard" class="card status"><div class="spinner"></div><div style="flex:1"><strong id="statusText">Preparando...</strong><div class="bar"><span id="barFill"></span></div></div></section>
+    <section id="errorBox" class="card err"></section>
+
+    <section id="summary" class="summary"><div class="metric"><strong id="msgCount">0</strong><span>mensagens</span></div><div class="metric"><strong id="audioCount">0</strong><span>áudios</span></div><div class="metric"><strong id="transCount">0</strong><span>transcritos</span></div></section>
+
+    <section id="tools" class="tools"><input id="search" class="search" placeholder="Buscar no histórico..." /><button id="copyBtn" class="secondary">Copiar histórico</button><button id="downloadBtn" class="secondary">Baixar TXT</button><button id="resetBtn" class="coral">Nova importação</button></section>
+    <section id="timeline" class="timeline"></section>
+  </main>
+
+<script>
+const AUDIO_EXTS = ['.opus','.ogg','.mp3','.m4a','.wav','.aac','.webm'];
+const els = {
+  apiKey: document.getElementById('apiKey'), saveKey: document.getElementById('saveKey'), clearKey: document.getElementById('clearKey'), keySaved: document.getElementById('keySaved'),
+  file: document.getElementById('fileInput'), drop: document.getElementById('drop'), statusCard: document.getElementById('statusCard'), statusText: document.getElementById('statusText'), bar: document.getElementById('barFill'), error: document.getElementById('errorBox'),
+  summary: document.getElementById('summary'), msgCount: document.getElementById('msgCount'), audioCount: document.getElementById('audioCount'), transCount: document.getElementById('transCount'), tools: document.getElementById('tools'), timeline: document.getElementById('timeline'), search: document.getElementById('search'),
+  copyBtn: document.getElementById('copyBtn'), downloadBtn: document.getElementById('downloadBtn'), resetBtn: document.getElementById('resetBtn'), installBtn: document.getElementById('installBtn')
+};
+let current = [], pendingFile = null, deferredInstall = null;
+
+initKey();
+window.addEventListener('beforeinstallprompt', (e)=>{ e.preventDefault(); deferredInstall = e; els.installBtn.style.display = 'inline-flex'; });
+els.installBtn.addEventListener('click', async()=>{ if(!deferredInstall) return; deferredInstall.prompt(); await deferredInstall.userChoice; deferredInstall=null; els.installBtn.style.display='none'; });
+if('serviceWorker' in navigator && location.protocol !== 'file:'){ navigator.serviceWorker.register('service-worker.js').catch(()=>{}); }
+
+function initKey(){ const k = localStorage.getItem('linhavoz_openai_key') || ''; els.apiKey.value = k; setKeySaved(!!k); }
+function setKeySaved(ok){ els.keySaved.classList.toggle('show', ok); }
+function getKey(){ return (localStorage.getItem('linhavoz_openai_key') || els.apiKey.value || '').trim(); }
+els.saveKey.addEventListener('click', ()=>{ const k = els.apiKey.value.trim(); if(!k){ showError('Cole a chave OpenAI antes de salvar.'); return; } localStorage.setItem('linhavoz_openai_key', k); setKeySaved(true); els.error.classList.remove('show'); if(pendingFile){ const f = pendingFile; pendingFile = null; processFile(f); }});
+els.clearKey.addEventListener('click', ()=>{ localStorage.removeItem('linhavoz_openai_key'); els.apiKey.value=''; setKeySaved(false); });
+
+function setStatus(text, pct){ els.error.classList.remove('show'); els.statusCard.classList.add('show'); els.statusText.textContent = text; els.bar.style.width = `${pct || 8}%`; }
+function hideStatus(){ els.statusCard.classList.remove('show'); }
+function showError(msg){ hideStatus(); els.error.textContent = msg; els.error.classList.add('show'); }
+function isZip(file){ return file && (/\.zip$/i.test(file.name || '') || /zip/i.test(file.type || '')); }
+function escapeHtml(s){ return String(s).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
+
+async function processFile(file){
+  if(!isZip(file)){ showError('Envie o ZIP exportado do WhatsApp com mídia.'); return; }
+  if(!window.JSZip){ showError('Não consegui carregar o leitor de ZIP. Verifique a internet e atualize a página.'); return; }
+  const apiKey = getKey();
+  if(!apiKey){ pendingFile = file; showError('Cole e salve sua chave OpenAI antes de processar o ZIP.'); els.apiKey.focus(); return; }
+
+  current = []; els.timeline.innerHTML=''; els.summary.classList.remove('show'); els.tools.classList.remove('show');
+  try{
+    setStatus('Abrindo ZIP...', 8);
+    const zip = await JSZip.loadAsync(await file.arrayBuffer());
+    setStatus('Lendo TXT do WhatsApp...', 16);
+    const txtEntry = findChatTxt(zip);
+    if(!txtEntry) throw new Error('Não encontrei o TXT da conversa dentro do ZIP. Exporte a conversa com mídia pelo WhatsApp.');
+    const rawTxt = await txtEntry.async('string');
+    const messages = parseWhatsappTxt(rawTxt);
+    if(!messages.length) throw new Error('Não consegui ler as mensagens do TXT.');
+
+    const audios = listAudioEntries(zip);
+    const used = new Set();
+    const audioQueue = audios.map((_,i)=>i);
+    const result = [];
+    let transcribed = 0, audioTotal = 0;
+
+    for(let i=0;i<messages.length;i++){
+      const msg = messages[i];
+      let audioIndex = findAudioForMessage(msg.text, audios, used);
+      if(audioIndex < 0 && looksLikeAudio(msg.text)) audioIndex = nextUnusedAudio(audioQueue, used);
+
+      if(audioIndex >= 0){
+        used.add(audioIndex); audioTotal++;
+        const entry = audios[audioIndex];
+        const pct = Math.min(92, 20 + Math.round((i / Math.max(messages.length,1)) * 70));
+        setStatus(`Transcrevendo áudio ${audioTotal}...`, pct);
+        let transcription = '';
+        try{ transcription = await transcribeAudio(zip, entry.name, apiKey); }catch(err){ transcription = `[Falha na transcrição: ${err.message || 'erro'}]`; }
+        if(transcription && !/^\[Falha/i.test(transcription)) transcribed++;
+        result.push({ id: result.length+1, date: msg.date, time: msg.time, author: msg.author, type:'audio', mediaFile: basename(entry.name), transcription, text: transcription ? `[Áudio transcrito]\n${transcription}` : `[Áudio não transcrito]\n${basename(entry.name)}` });
+      }else{
+        result.push({ id: result.length+1, date: msg.date, time: msg.time, author: msg.author, type:'text', text: cleanText(msg.text) });
+      }
+    }
+
+    setStatus('Montando histórico...', 96);
+    current = result;
+    render(result, { totalMessages: result.length, totalAudios: audioTotal, transcribedAudios: transcribed });
+    setStatus('Pronto.', 100); setTimeout(hideStatus, 600);
+  }catch(err){ showError(err.message || 'Erro ao processar o ZIP.'); }
+}
+
+function findChatTxt(zip){ const entries = Object.values(zip.files).filter(f => !f.dir && /\.txt$/i.test(f.name)); if(!entries.length) return null; return entries.find(f => /(_chat|conversa|whatsapp)/i.test(f.name)) || entries[0]; }
+function listAudioEntries(zip){ return Object.values(zip.files).filter(f => !f.dir && AUDIO_EXTS.some(ext => f.name.toLowerCase().endsWith(ext))).sort((a,b)=>norm(a.name).localeCompare(norm(b.name))); }
+function basename(name){ return String(name || '').split('/').pop(); }
+function norm(s){ return basename(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(); }
+function cleanAuthor(author){ return String(author || '').replace(/[\u200e\u200f]/g,'').trim(); }
+function cleanText(text){ return String(text || '').replace(/[\u200e\u200f]/g,'').replace(/^\s+|\s+$/g,''); }
+function normalizeDate(date){ const parts = String(date).replace(/\./g,'/').replace(/-/g,'/').split('/'); if(parts.length !== 3) return date; let [d,m,y] = parts; if(y.length === 2) y = `20${y}`; return `${d.padStart(2,'0')}/${m.padStart(2,'0')}/${y}`; }
+function isSystemNoise(text){ const t = cleanText(text).toLowerCase(); return t.includes('as mensagens e ligações são protegidas') || t.includes('messages and calls are end-to-end encrypted'); }
+function looksLikeAudio(text){ const t = cleanText(text).toLowerCase(); return AUDIO_EXTS.some(ext => t.includes(ext)) || t.includes('áudio') || t.includes('audio') || t.includes('ptt-') || t.includes('aud-') || t.includes('mídia ocultada') || t.includes('media omitted'); }
+
+function parseWhatsappTxt(txt){
+  const lines = String(txt || '').replace(/^\uFEFF/, '').split(/\r?\n/);
+  const out = [];
+  const patterns = [
+    /^\[?(\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4}),?\s+(\d{1,2}:\d{2})(?::\d{2})?\]?\s*-\s*([^:]+):\s*(.*)$/,
+    /^\[?(\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4}),?\s+(\d{1,2}:\d{2})(?::\d{2})?\]?\s*([^:]+):\s*(.*)$/
+  ];
+  for(const line of lines){
+    let match = null;
+    for(const p of patterns){ match = line.match(p); if(match) break; }
+    if(match){ out.push({ date: normalizeDate(match[1]), time: match[2], author: cleanAuthor(match[3]), text: cleanText(match[4]) }); }
+    else if(out.length && line.trim()){ out[out.length-1].text += `\n${line.trim()}`; }
+  }
+  return out.filter(m => m.text && !isSystemNoise(m.text));
+}
+
+function findAudioForMessage(text, audioEntries, used){
+  const t = norm(text);
+  for(let i=0;i<audioEntries.length;i++){ if(used.has(i)) continue; const n = norm(audioEntries[i].name); const b = norm(basename(audioEntries[i].name)); if(t.includes(n) || t.includes(b)) return i; }
+  const nameMatch = cleanText(text).match(/(?:PTT|AUD|AUDIO|Audio)[-\w\s().]+\.(?:opus|ogg|mp3|m4a|wav|aac|webm)/i);
+  if(nameMatch){ const wanted = norm(nameMatch[0]); for(let i=0;i<audioEntries.length;i++){ if(!used.has(i) && (norm(audioEntries[i].name).includes(wanted) || wanted.includes(norm(audioEntries[i].name)))) return i; } }
+  return -1;
+}
+function nextUnusedAudio(queue, used){ while(queue.length){ const i = queue.shift(); if(!used.has(i)) return i; } return -1; }
+
+async function transcribeAudio(zip, audioName, apiKey){
+  const entry = zip.file(audioName); if(!entry) return '';
+  const original = basename(audioName);
+  const safeName = original.replace(/\.opus$/i,'.ogg');
+  const blob = await entry.async('blob');
+  const file = new File([blob], safeName, { type: mimeFor(safeName) });
+  const form = new FormData();
+  form.append('file', file, safeName);
+  form.append('model', 'whisper-1');
+  form.append('language', 'pt');
+  const res = await fetch('https://api.openai.com/v1/audio/transcriptions', { method:'POST', headers:{ Authorization:`Bearer ${apiKey}` }, body:form });
+  const data = await res.json().catch(()=>null);
+  if(!res.ok) throw new Error(data?.error?.message || `OpenAI retornou erro ${res.status}`);
+  return cleanText(data?.text || '');
+}
+function mimeFor(name){ const n = name.toLowerCase(); if(n.endsWith('.mp3')) return 'audio/mpeg'; if(n.endsWith('.m4a')) return 'audio/mp4'; if(n.endsWith('.wav')) return 'audio/wav'; if(n.endsWith('.webm')) return 'audio/webm'; if(n.endsWith('.aac')) return 'audio/aac'; return 'audio/ogg'; }
+
+function render(items, summary){ els.msgCount.textContent = summary.totalMessages ?? items.length; els.audioCount.textContent = summary.totalAudios ?? items.filter(x=>x.type==='audio').length; els.transCount.textContent = summary.transcribedAudios ?? items.filter(x=>x.type==='audio' && x.transcription).length; els.summary.classList.add('show'); els.tools.classList.add('show'); els.timeline.classList.add('show'); paint(items); }
+function paint(items){ const q = (els.search.value || '').trim().toLowerCase(); const filtered = q ? items.filter(i => `${i.author} ${i.date} ${i.time} ${i.text}`.toLowerCase().includes(q)) : items; if(!filtered.length){ els.timeline.innerHTML = '<div class="empty">Nada encontrado.</div>'; return; } els.timeline.innerHTML = filtered.map(i=>`<article class="item"><div class="meta"><span>${escapeHtml(i.date||'')} ${escapeHtml(i.time||'')}</span><span class="author">${escapeHtml(i.author||'Sem nome')}</span><span class="kind ${i.type==='audio'?'audio':''}">${i.type==='audio'?'Áudio transcrito':'Texto'}</span></div><div class="text">${escapeHtml(i.text||'')}</div></article>`).join(''); }
+function historyText(){ return current.map(i => `${i.date || ''} ${i.time || ''} — ${i.author || 'Sem nome'}\n${i.text || ''}`).join('\n\n'); }
+
+els.file.addEventListener('change', e => processFile(e.target.files?.[0]));
+els.search.addEventListener('input', ()=>paint(current));
+els.copyBtn.addEventListener('click', async()=>{ await navigator.clipboard.writeText(historyText()); els.copyBtn.textContent='Copiado'; setTimeout(()=>els.copyBtn.textContent='Copiar histórico',1200); });
+els.downloadBtn.addEventListener('click', ()=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([historyText()],{type:'text/plain;charset=utf-8'})); a.download='historico-linhavoz.txt'; a.click(); URL.revokeObjectURL(a.href); });
+els.resetBtn.addEventListener('click', ()=>{ current=[]; els.timeline.innerHTML=''; els.summary.classList.remove('show'); els.tools.classList.remove('show'); els.file.value=''; els.error.classList.remove('show'); });
+['dragenter','dragover'].forEach(ev=>els.drop.addEventListener(ev, e=>{ e.preventDefault(); els.drop.classList.add('drag'); }));
+['dragleave','drop'].forEach(ev=>els.drop.addEventListener(ev, e=>{ e.preventDefault(); els.drop.classList.remove('drag'); }));
+els.drop.addEventListener('drop', e=> processFile(e.dataTransfer.files?.[0]));
+
+async function openShareDb(){ return new Promise((resolve,reject)=>{ const req = indexedDB.open('linhavoz-share-v2', 1); req.onupgradeneeded = () => { if(!req.result.objectStoreNames.contains('zips')) req.result.createObjectStore('zips'); }; req.onsuccess = () => resolve(req.result); req.onerror = () => reject(req.error); }); }
+async function idbGet(key){ const db = await openShareDb(); return new Promise(resolve=>{ const tx = db.transaction('zips','readonly'); const req = tx.objectStore('zips').get(key); req.onsuccess = () => resolve(req.result || null); req.onerror = () => resolve(null); }); }
+async function idbDel(key){ const db = await openShareDb(); return new Promise(resolve=>{ const tx = db.transaction('zips','readwrite'); tx.objectStore('zips').delete(key); tx.oncomplete = () => resolve(); tx.onerror = () => resolve(); }); }
+async function checkShared(){
+  try{ const rec = await idbGet('latest'); if(rec?.blob){ await idbDel('latest'); const file = new File([rec.blob], rec.name || 'conversa-whatsapp.zip', {type: rec.type || 'application/zip'}); processFile(file); return; } }catch(_){ }
+  try{ const cache = await caches.open('linhavoz-share-cache-v2'); const resp = await cache.match('/__linhavoz_shared_zip__'); if(resp){ const blob = await resp.blob(); await cache.delete('/__linhavoz_shared_zip__'); processFile(new File([blob], 'conversa-whatsapp.zip', {type: blob.type || 'application/zip'})); } }catch(_){ }
+}
+checkShared();
+</script>
+</body>
+</html>
